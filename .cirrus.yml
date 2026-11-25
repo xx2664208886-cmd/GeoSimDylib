@@ -1,0 +1,9 @@
+build_task:
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-ventura-xcode:latest
+  build_script:
+    - chmod +x build.sh
+    - ./build.sh
+  artifacts:
+    path: "build/GeoSimHook.dylib"
+    type: BINARY

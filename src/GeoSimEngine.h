@@ -14,6 +14,7 @@ typedef NS_ENUM(NSInteger, GeoSimTransportMode) {
 
 @interface GeoSimPlace : NSObject
 @property (nonatomic, copy) NSString *name;
+@property (nonatomic, copy) NSString *note;
 @property (nonatomic, assign) double latWGS84;
 @property (nonatomic, assign) double lngWGS84;
 @property (nonatomic, assign) NSTimeInterval timestamp;
@@ -70,6 +71,7 @@ typedef NS_ENUM(NSInteger, GeoSimTransportMode) {
 - (void)stopRoute;
 
 - (void)addFavorite:(CLLocationCoordinate2D)coord name:(NSString *)name;
+- (void)addFavorite:(CLLocationCoordinate2D)coord name:(NSString *)name note:(nullable NSString *)note;
 - (void)removeFavoriteAtIndex:(NSUInteger)index;
 
 /// Builds a fresh CLLocation reflecting current spoofed coordinates & kinematics.

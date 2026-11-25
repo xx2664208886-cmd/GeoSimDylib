@@ -178,6 +178,10 @@
     UITapGestureRecognizer *mapTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleMapTap:)];
     [self.mapView addGestureRecognizer:mapTap];
 
+    UILongPressGestureRecognizer *mapLongPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleMapLongPress:)];
+    mapLongPress.minimumPressDuration = 0.5;
+    [self.mapView addGestureRecognizer:mapLongPress];
+
     self.crosshairLabel = [[UILabel alloc] init];
     self.crosshairLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.crosshairLabel.text = @"✛";
@@ -799,20 +803,37 @@
     }
 }
 
-- (void)favoriteCenterTapped {
-    CLLocationCoordinate2D wgs = GeoSimMapToWGS84(self.mapView.centerCoordinate);
-    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"收藏准星位置"
-                                                                message:[NSString stringWithFormat:@"%.5f, %.5f", wgs.latitude, wgs.longitude]
+- (void)promptFavoriteAtWGS84:(CLLocationCoordinate2D)wgs title:(NSString *)title {
+    UIAlertController *ac = [UIAlertController alertControllerWithTitle:title
+                                                                message:[NSString stringWithFormat:@"WGS-84: %.5f, %.5f", wgs.latitude, wgs.longitude]
                                                          preferredStyle:UIAlertControllerStyleAlert];
     [ac addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull tf) {
         tf.placeholder = @"输入地点名称 (如: 公司打卡点)";
     }];
+    [ac addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull tf) {
+        tf.placeholder = @"输入备注 (选填，如: 东门考勤机)";
+    }];
     [ac addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
-    [ac addAction:[UIAlertAction actionWithTitle:@"保存" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        NSString *name = ac.textFields.firstObject.text;
-        [[GeoSimEngine shared] addFavorite:wgs name:name];
+    [ac addAction:[UIAlertAction actionWithTitle:@"保存收藏" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *name = ac.textFields[0].text;
+        NSString *note = ac.textFields[1].text;
+        [[GeoSimEngine shared] addFavorite:wgs name:name note:note];
+        self.centerCoordLabel.text = @" 已收藏该地点 ";
     }]];
     [self presentViewController:ac animated:YES completion:nil];
+}
+
+- (void)favoriteCenterTapped {
+    CLLocationCoordinate2D wgs = GeoSimMapToWGS84(self.mapView.centerCoordinate);
+    [self promptFavoriteAtWGS84:wgs title:@"收藏准星位置"];
+}
+
+- (void)handleMapLongPress:(UILongPressGestureRecognizer *)gr {
+    if (gr.state != UIGestureRecognizerStateBegan) return;
+    CGPoint pt = [gr locationInView:self.mapView];
+    CLLocationCoordinate2D mapCoord = [self.mapView convertPoint:pt toCoordinateFromView:self.mapView];
+    CLLocationCoordinate2D wgs = GeoSimMapToWGS84(mapCoord);
+    [self promptFavoriteAtWGS84:wgs title:@"长按收藏地点"];
 }
 
 - (void)handleMapTap:(UITapGestureRecognizer *)gr {
@@ -945,9 +966,13 @@
     }
     GeoSimEngine *eng = [GeoSimEngine shared];
     GeoSimPlace *p = (indexPath.section == 0) ? eng.favorites[indexPath.row] : eng.recents[indexPath.row];
-    cell.textLabel.text = p.name;
+    if (p.note.length > 0) {
+        cell.textLabel.text = [NSString stringWithFormat:@"%@ · %@", p.name, p.note];
+    } else {
+        cell.textLabel.text = p.name;
+    }
     cell.textLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-    cell.detailTextLabel.text = [NSString stringWithFormat:@"WGS: %.5f, %.5f", p.latWGS84, p.lngWGS84];
+    cell.detailTextLabel.text = [NSString stringWithFormat:@"点击一键定位 · WGS: %.5f, %.5f", p.latWGS84, p.lngWGS84];
     cell.detailTextLabel.font = [UIFont monospacedDigitSystemFontOfSize:11 weight:UIFontWeightRegular];
     return cell;
 }

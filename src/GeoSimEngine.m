@@ -25,6 +25,7 @@ static NSString * const kPrefRangeRadius   = @"com.geosim.hook.rangeRadius";
 - (NSDictionary *)toDictionary {
     return @{
         @"name": self.name ?: @"未命名地点",
+        @"note": self.note ?: @"",
         @"lat": @(self.latWGS84),
         @"lng": @(self.lngWGS84),
         @"ts": @(self.timestamp)
@@ -38,6 +39,7 @@ static NSString * const kPrefRangeRadius   = @"com.geosim.hook.rangeRadius";
     if (![lat isKindOfClass:[NSNumber class]] || ![lng isKindOfClass:[NSNumber class]]) return nil;
     GeoSimPlace *p = [[GeoSimPlace alloc] init];
     p.name = [dict[@"name"] isKindOfClass:[NSString class]] ? dict[@"name"] : @"未命名地点";
+    p.note = [dict[@"note"] isKindOfClass:[NSString class]] ? dict[@"note"] : @"";
     p.latWGS84 = lat.doubleValue;
     p.lngWGS84 = lng.doubleValue;
     p.timestamp = [dict[@"ts"] isKindOfClass:[NSNumber class]] ? [dict[@"ts"] doubleValue] : 0.0;
@@ -478,8 +480,13 @@ static NSString * const kPrefRangeRadius   = @"com.geosim.hook.rangeRadius";
 }
 
 - (void)addFavorite:(CLLocationCoordinate2D)coord name:(NSString *)name {
+    [self addFavorite:coord name:name note:nil];
+}
+
+- (void)addFavorite:(CLLocationCoordinate2D)coord name:(NSString *)name note:(nullable NSString *)note {
     GeoSimPlace *p = [[GeoSimPlace alloc] init];
     p.name = name.length > 0 ? name : [NSString stringWithFormat:@"%.5f, %.5f", coord.latitude, coord.longitude];
+    p.note = note ?: @"";
     p.latWGS84 = coord.latitude;
     p.lngWGS84 = coord.longitude;
     p.timestamp = [[NSDate date] timeIntervalSince1970];

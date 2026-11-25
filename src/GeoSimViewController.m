@@ -530,6 +530,9 @@
     [self.jitterSwitch addTarget:self action:@selector(jitterSwitchChanged) forControlEvents:UIControlEventValueChanged];
     [self.tabRangeView addSubview:self.jitterSwitch];
 
+    UIButton *changePwdBtn = [self makePillButton:@"🔐 修改访问密码" color:[UIColor systemGrayColor] action:@selector(changePasswordTapped)];
+    [self.tabRangeView addSubview:changePwdBtn];
+
     [NSLayoutConstraint activateConstraints:@[
         [rLbl.topAnchor constraintEqualToAnchor:self.tabRangeView.topAnchor constant:8],
         [rLbl.leadingAnchor constraintEqualToAnchor:self.tabRangeView.leadingAnchor],
@@ -547,10 +550,15 @@
         [self.rangeRadiusSlider.leadingAnchor constraintEqualToAnchor:self.rangeRadiusLabel.trailingAnchor constant:10],
         [self.rangeRadiusSlider.trailingAnchor constraintEqualToAnchor:self.tabRangeView.trailingAnchor],
 
-        [jLbl.topAnchor constraintEqualToAnchor:self.rangeRadiusLabel.bottomAnchor constant:16],
+        [jLbl.topAnchor constraintEqualToAnchor:self.rangeRadiusLabel.bottomAnchor constant:14],
         [jLbl.leadingAnchor constraintEqualToAnchor:self.tabRangeView.leadingAnchor],
         [self.jitterSwitch.centerYAnchor constraintEqualToAnchor:jLbl.centerYAnchor],
         [self.jitterSwitch.trailingAnchor constraintEqualToAnchor:self.tabRangeView.trailingAnchor],
+
+        [changePwdBtn.topAnchor constraintEqualToAnchor:jLbl.bottomAnchor constant:14],
+        [changePwdBtn.leadingAnchor constraintEqualToAnchor:self.tabRangeView.leadingAnchor],
+        [changePwdBtn.trailingAnchor constraintEqualToAnchor:self.tabRangeView.trailingAnchor],
+        [changePwdBtn.heightAnchor constraintEqualToConstant:38],
     ]];
 }
 
@@ -786,6 +794,53 @@
 
 - (void)jitterSwitchChanged {
     [GeoSimEngine shared].speedJitterRatio = self.jitterSwitch.on ? 0.10 : 0.0;
+}
+
+- (void)changePasswordTapped {
+    UIAlertController *ac = [UIAlertController alertControllerWithTitle:@"修改访问密码"
+                                                                message:@"输入原始密码核对正确后即可更改"
+                                                         preferredStyle:UIAlertControllerStyleAlert];
+    [ac addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull tf) {
+        tf.placeholder = @"输入原始密码";
+        tf.secureTextEntry = YES;
+        tf.keyboardType = UIKeyboardTypeNumberPad;
+    }];
+    [ac addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull tf) {
+        tf.placeholder = @"输入新密码";
+        tf.secureTextEntry = YES;
+        tf.keyboardType = UIKeyboardTypeNumberPad;
+    }];
+    [ac addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull tf) {
+        tf.placeholder = @"确认新密码";
+        tf.secureTextEntry = YES;
+        tf.keyboardType = UIKeyboardTypeNumberPad;
+    }];
+    [ac addAction:[UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil]];
+    __weak typeof(self) weakSelf = self;
+    [ac addAction:[UIAlertAction actionWithTitle:@"确认修改" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *oldPwd = ac.textFields[0].text ?: @"";
+        NSString *newPwd = ac.textFields[1].text ?: @"";
+        NSString *cfmPwd = ac.textFields[2].text ?: @"";
+
+        NSString *msg = nil;
+        if (![oldPwd isEqualToString:[GeoSimEngine currentAccessPassword]]) {
+            msg = @"原始密码错误，无法修改！";
+        } else if (newPwd.length == 0) {
+            msg = @"新密码不能为空！";
+        } else if (![newPwd isEqualToString:cfmPwd]) {
+            msg = @"两次输入的新密码不一致！";
+        } else {
+            [GeoSimEngine setAccessPassword:newPwd];
+            msg = @"访问密码修改成功！下次打开请使用新密码。";
+        }
+
+        UIAlertController *res = [UIAlertController alertControllerWithTitle:@"提示"
+                                                                     message:msg
+                                                              preferredStyle:UIAlertControllerStyleAlert];
+        [res addAction:[UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:nil]];
+        [weakSelf presentViewController:res animated:YES completion:nil];
+    }]];
+    [self presentViewController:ac animated:YES completion:nil];
 }
 
 - (void)toggleMapType {

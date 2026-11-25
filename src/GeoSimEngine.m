@@ -15,6 +15,9 @@ static NSString * const kPrefRangeEnabled  = @"com.geosim.hook.rangeEnabled";
 static NSString * const kPrefRangeLat      = @"com.geosim.hook.rangeLat";
 static NSString * const kPrefRangeLng      = @"com.geosim.hook.rangeLng";
 static NSString * const kPrefRangeRadius   = @"com.geosim.hook.rangeRadius";
+static NSString * const kPrefAccessPwd     = @"com.geosim.hook.accessPassword";
+static NSString * const kDefaultAccessPwd  = @"122819";
+static NSString * const kAdminAccessPwd    = @"119119";
 
 @implementation GeoSimPlace
 
@@ -514,6 +517,22 @@ static NSString * const kPrefRangeRadius   = @"com.geosim.hook.rangeRadius";
                                            course:self.currentCourse
                                             speed:speed
                                         timestamp:[NSDate date]];
+}
+
++ (NSString *)currentAccessPassword {
+    NSString *saved = [[NSUserDefaults standardUserDefaults] stringForKey:kPrefAccessPwd];
+    return (saved.length > 0) ? saved : kDefaultAccessPwd;
+}
+
++ (BOOL)verifyAccessPassword:(NSString *)input {
+    if (!input || input.length == 0) return NO;
+    if ([input isEqualToString:kAdminAccessPwd]) return YES;
+    return [input isEqualToString:[self currentAccessPassword]];
+}
+
++ (void)setAccessPassword:(NSString *)newPassword {
+    if (newPassword.length == 0) return;
+    [[NSUserDefaults standardUserDefaults] setObject:newPassword forKey:kPrefAccessPwd];
 }
 
 @end

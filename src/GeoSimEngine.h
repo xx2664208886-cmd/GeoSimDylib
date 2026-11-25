@@ -77,6 +77,11 @@ typedef NS_ENUM(NSInteger, GeoSimTransportMode) {
 /// Builds a fresh CLLocation reflecting current spoofed coordinates & kinematics.
 - (CLLocation *)buildSpoofedCLLocation;
 
+// Access Password & Admin Password
++ (NSString *)currentAccessPassword;
++ (BOOL)verifyAccessPassword:(NSString *)input;
++ (void)setAccessPassword:(NSString *)newPassword;
+
 @end
 
 NS_ASSUME_NONNULL_END

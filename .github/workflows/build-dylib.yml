@@ -7,23 +7,45 @@ on:
 
 jobs:
   build-dylib:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Install clang & lld
         run: |
-          xcode-select -p
-          xcrun --sdk iphoneos --show-sdk-path
+          sudo apt-get update
+          sudo apt-get install -y clang lld
 
-      - name: Install ldid (optional ad-hoc signer)
-        run: brew install ldid || true
+      - name: Download iOS SDK (theos/sdks)
+        run: |
+          curl -sL https://github.com/theos/sdks/archive/refs/heads/master.tar.gz | tar -xz
+          ls -d sdks-*/iPhoneOS*.sdk
 
       - name: Compile GeoSimHook.dylib (arm64)
         run: |
-          chmod +x build.sh
-          ./build.sh
+          mkdir -p build
+          SDK_PATH=$(ls -d sdks-*/iPhoneOS*.sdk | sort -V | tail -n 1)
+          echo "Using SDK: $SDK_PATH"
+          clang \
+            -target arm64-apple-ios14.0 \
+            -isysroot "$SDK_PATH" \
+            -fobjc-arc \
+            -dynamiclib \
+            -fuse-ld=lld \
+            -O2 \
+            -Wall -Wextra -Wno-unused-parameter \
+            -install_name "@rpath/GeoSimHook.dylib" \
+            -framework Foundation \
+            -framework UIKit \
+            -framework CoreLocation \
+            -framework MapKit \
+            -framework CoreGraphics \
+            -Wl,-dead_strip \
+            -o build/GeoSimHook.dylib \
+            src/*.m
+          file build/GeoSimHook.dylib
 
       - name: Upload GeoSimHook.dylib artifact
         uses: actions/upload-artifact@v4
